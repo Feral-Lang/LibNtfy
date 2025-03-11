@@ -1,0 +1,7 @@
+let io = import('std/io');
+let ntfy = import('ntfy/ntfy');
+let emoji = import('emoji/emoji');
+
+let notifier = ntfy.new('https://ntfy.electrux.me', 'tk_5foy01hdtxg6dl66qsx7pwnbac1o1', 'automation-scripts');
+io.println(notifier.testCon().result);
+
