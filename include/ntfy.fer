@@ -2,14 +2,12 @@ let io = import('std/io');
 let os = import('std/os');
 let map = import('std/map');
 let vec = import('std/vec');
-let curl = import('curl/curl');
-let emoji = import('emoji/emoji');
 
 let ntfyBin = os.findExec('ntfy');
 # ntfy publish -k "$NTFY_TOKEN" -p high -T green_circle,computer,"$TARGET_HOSTNAME",connstate -t 'Network connection is back!'
 #   $NTFY_SERVER/$NTFY_TOPIC_NAME 'Connection is successful!'
 
-if ntfyBin.empty() {
+if ntfyBin == nil {
 	io.eprintln('[ERROR] Ntfy binary not found! Please install that first!');
 	feral.exit(1);
 }
@@ -32,11 +30,12 @@ NtfyCon.setTypeName('NtfyCon');
 let new = fn(server, token, topic) { return NtfyCon(server, token, topic); };
 
 let testCon in NtfyCon = fn() {
-	return self.publish(Priority.DEFAULT, 'This is a test title', 'Just a connection test message', emoji.fromShort('grey_exclamation'));
+	let tagStr = genTagStr('❕');
+	return self.publish(Priority.DEFAULT, 'This is a test title', 'Just a connection test message', tagStr);
 };
 
-let publish in NtfyCon = fn(priority, title, msg, tags...) {
-	let cmd = vec.new('ntfy', 'publish', '-k', self.token, '-p', priority, '-T', genTagStr(tags...),
+let publish in NtfyCon = fn(priority, title, msg, tagStr) {
+	let cmd = vec.new('ntfy', 'publish', '-k', self.token, '-p', priority, '-T', tagStr,
 			  '-t', title, self.server + '/' + self.topic, msg);
 	let res = map.new(refs = true);
 	let output = '';
