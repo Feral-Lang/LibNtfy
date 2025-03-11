@@ -1,0 +1,12 @@
+let io = import('std/io');
+let os = import('std/os');
+let ntfy = import('ntfy/ntfy');
+let emoji = import('emoji/emoji');
+
+let SERVER = os.getEnv('NTFY_SERVER');
+let TOKEN = os.getEnv('NTFY_TOKEN');
+let TOPIC = os.getEnv('NTFY_TOPIC');
+
+let notifier = ntfy.new(SERVER, TOKEN, TOPIC);
+io.println(notifier.testCon().result);
+
