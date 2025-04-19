@@ -2,26 +2,17 @@ let io = import('std/io');
 let os = import('std/os');
 let map = import('std/map');
 let vec = import('std/vec');
+let curl = import('curl/curl');
 
-inline if os.name == 'windows' {
-let ntfyBin = os.findExec('ntfy.exe');
-} else {
-let ntfyBin = os.findExec('ntfy');
-}
 # ntfy publish -k "$NTFY_TOKEN" -p high -T green_circle,computer,"$TARGET_HOSTNAME",connstate -t 'Network connection is back!'
 #   $NTFY_SERVER/$NTFY_TOPIC_NAME 'Connection is successful!'
 
-if ntfyBin == nil {
-	io.eprintln('[ERROR] Ntfy binary not found! Please install that first!');
-	feral.exit(1);
-}
-
 let Priority = struct(
-	MAX = 'MAX',
-	HIGH = 'HIGH',
-	DEFAULT = 'DEFAULT',
-	LOW = 'LOW',
-	MIN = 'MIN'
+	MAX = 5,
+	HIGH = 4,
+	DEFAULT = 3,
+	LOW = 2,
+	MIN = 1
 )();
 
 let NtfyCon = struct(
@@ -39,13 +30,25 @@ let testCon in NtfyCon = fn() {
 };
 
 let publish in NtfyCon = fn(priority, title, msg, tagStr) {
-	let cmd = vec.new('ntfy', 'publish', '-k', self.token, '-p', priority, '-T', tagStr,
-			  '-t', title, self.server + '/' + self.topic, msg);
-	let res = map.new(refs = true);
-	let output = '';
-	res.insert('exitcode', os.exec(cmd, out = output));
-	res.insert('result', output);
-	return res;
+	let c = curl.newEasy();
+	c.setOpt(curl.OPT_URL, self.server + '/' + self.topic);
+	c.setOpt(curl.OPT_FOLLOWLOCATION, 1);
+	c.setOpt(curl.OPT_POSTFIELDS, msg);
+
+	let httpHeaders = map.new(refs = true);
+	httpHeaders.insert('Content-Type', 'application/x-www-form-urlencoded');
+	httpHeaders.insert('Priority', priority.str());
+	httpHeaders.insert('Title', title);
+	httpHeaders.insert('Authorization', 'Bearer ' + self.token);
+	httpHeaders.insert('Tags', tagStr);
+	c.setOpt(curl.OPT_HTTPHEADER, httpHeaders);
+	let res = c.perform();
+	let resMap = map.new(refs = true);
+	resMap.insert('retcode', res);
+	if res != curl.E_OK {
+		resMap.insert('errmsg', curl.strerr(res));
+	}
+	return resMap;
 };
 
 let setTopic in NtfyCon = fn(topic) {
