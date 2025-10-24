@@ -9,4 +9,3 @@ let TOPIC = os.getEnv('NTFY_TOPIC');
 
 let notifier = ntfy.new(SERVER, TOKEN, TOPIC);
 io.println(notifier.testCon().retcode);
-

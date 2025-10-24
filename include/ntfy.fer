@@ -8,61 +8,61 @@ let curl = import('curl/curl');
 #   $NTFY_SERVER/$NTFY_TOPIC_NAME 'Connection is successful!'
 
 let Priority = struct(
-	MAX = 5,
-	HIGH = 4,
-	DEFAULT = 3,
-	LOW = 2,
-	MIN = 1
+    MAX = 5,
+    HIGH = 4,
+    DEFAULT = 3,
+    LOW = 2,
+    MIN = 1
 )();
 
 let NtfyCon = struct(
-	server = '',
-	token = '',
-	topic = ''
+    server = '',
+    token = '',
+    topic = ''
 );
 NtfyCon.setTypeName('NtfyCon');
 
 let new = fn(server, token, topic) { return NtfyCon(server, token, topic); };
 
 let testCon in NtfyCon = fn() {
-	let tagStr = genTagStr('❕');
-	return self.publish(Priority.DEFAULT, 'This is a test title', 'Just a connection test message', tagStr);
+    let tagStr = genTagStr('❕');
+    return self.publish(Priority.DEFAULT, 'This is a test title', 'Just a connection test message', tagStr);
 };
 
 let publish in NtfyCon = fn(priority, title, msg, tagStr) {
-	let c = curl.newEasy();
-	c.setOpt(curl.OPT_URL, self.server + '/' + self.topic);
-	c.setOpt(curl.OPT_FOLLOWLOCATION, 1);
-	c.setOpt(curl.OPT_POSTFIELDS, msg);
+    let c = curl.newEasy();
+    c.setOpt(curl.OPT_URL, self.server + '/' + self.topic);
+    c.setOpt(curl.OPT_FOLLOWLOCATION, 1);
+    c.setOpt(curl.OPT_POSTFIELDS, msg);
 
-	let httpHeaders = map.new(refs = true);
-	httpHeaders.insert('Content-Type', 'application/x-www-form-urlencoded');
-	httpHeaders.insert('Priority', priority.str());
-	httpHeaders.insert('Title', title);
-	httpHeaders.insert('Authorization', 'Bearer ' + self.token);
-	httpHeaders.insert('Tags', tagStr);
-	c.setOpt(curl.OPT_HTTPHEADER, httpHeaders);
-	let res = c.perform();
-	let resMap = map.new(refs = true);
-	resMap.insert('retcode', res);
-	if res != curl.E_OK {
-		resMap.insert('errmsg', curl.strerr(res));
-	}
-	return resMap;
+    let httpHeaders = map.new(refs = true);
+    httpHeaders.insert('Content-Type', 'application/x-www-form-urlencoded');
+    httpHeaders.insert('Priority', priority.str());
+    httpHeaders.insert('Title', title);
+    httpHeaders.insert('Authorization', 'Bearer ' + self.token);
+    httpHeaders.insert('Tags', tagStr);
+    c.setOpt(curl.OPT_HTTPHEADER, httpHeaders);
+    let res = c.perform();
+    let resMap = map.new(refs = true);
+    resMap.insert('retcode', res);
+    if res != curl.E_OK {
+        resMap.insert('errmsg', curl.strerr(res));
+    }
+    return resMap;
 };
 
 let setTopic in NtfyCon = fn(topic) {
-	self.topic = topic;
+    self.topic = topic;
 };
 
 # Utility functions
 
 let genTagStr = fn(items...) {
-	let res = '';
-	for item in items.each() {
-		res += item;
-		res += ',';
-	}
-	if items.len() > 0 { res.pop(); }
-	return res;
+    let res = '';
+    for item in items.each() {
+        res += item;
+        res += ',';
+    }
+    if items.len() > 0 { res.pop(); }
+    return res;
 };
