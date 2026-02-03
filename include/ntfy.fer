@@ -22,13 +22,26 @@ let NtfyCon = struct(
 );
 NtfyCon.setTypeName('NtfyCon');
 
+"
+  fn(server, token, topic) -> NtfyCon
+Creates and returns a new Ntfy connection using `server` URL, authentication `token`, and `topic`.
+"
 let new = fn(server, token, topic) { return NtfyCon(server, token, topic); };
 
+"
+  var.fn() -> Map
+Publish a test message on the NtfyCon `var` and returns its result as a Map object.
+"
 let testCon in NtfyCon = fn() {
     let tagStr = genTagStr('❕');
     return self.publish(Priority.DEFAULT, 'This is a test title', 'Just a connection test message', tagStr);
 };
 
+"
+  var.fn(priority, title, msg, tagStr) -> Map
+Publish a `msg` using `title` with `priority` and having tags from `tagStr`.
+Returns the result as a Map object containing `retcode`, as well as `errmsg` on failure.
+"
 let publish in NtfyCon = fn(priority, title, msg, tagStr) {
     let c = curl.newEasy();
     c.setOpt(curl.OPT_URL, self.server + '/' + self.topic);
@@ -51,6 +64,10 @@ let publish in NtfyCon = fn(priority, title, msg, tagStr) {
     return resMap;
 };
 
+"
+  var.fn(topic) -> Nil
+Sets the topic in NtfyCon `var` as `topic`.
+"
 let setTopic in NtfyCon = fn(topic) {
     self.topic = topic;
 };
