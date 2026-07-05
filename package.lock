@@ -1,0 +1,16 @@
+deps = [
+    {
+        isFeral = false;
+        name = "libcurl";
+        constraint = ">=8.21.0";
+        sha256 = "";
+        url = "";
+    },
+    {
+        isFeral = true;
+        sha256 = "3f5097c534d27791197cc031d4c0d0097e40eab3b1f6b4dae5d59a5ff5913374";
+        url = "https://github.com/Feral-Lang/LibCurl/archive/refs/tags/0.1.0.tar.gz";
+        constraint = ">=0.1.0";
+        name = "Curl";
+    }
+];

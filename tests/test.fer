@@ -7,5 +7,10 @@ let SERVER = os.getEnv('NTFY_SERVER');
 let TOKEN = os.getEnv('NTFY_TOKEN');
 let TOPIC = os.getEnv('NTFY_TOPIC');
 
+if SERVER == nil {
+    io.println('Required env variables are not set!');
+    feral.exit(1);
+}
+
 let notifier = ntfy.new(SERVER, TOKEN, TOPIC);
 io.println(notifier.testCon());

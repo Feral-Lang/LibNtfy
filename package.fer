@@ -1,0 +1,12 @@
+let vec = import('std/vec');
+let package = import('std/package');
+
+let pkg = package.new(
+    name = 'Ntfy',
+    desc = 'Ntfy bindings for Feral.',
+    version = '0.1.0',
+    feral = '>=2.2.1',
+    author = vec.new('Chirag-Khandelwal <github@mail.chiragkh.me>')
+);
+
+pkg.requires('Curl', version = '>=0.1.0', feral = true);
