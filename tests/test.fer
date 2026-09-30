@@ -5,12 +5,39 @@ let emoji = import('emoji/emoji');
 
 let SERVER = os.getEnv('NTFY_SERVER');
 let TOKEN = os.getEnv('NTFY_TOKEN');
-let TOPIC = os.getEnv('NTFY_TOPIC');
+let TOPIC = os.getEnv('NTFY_TOPIC') ?? 'feral-test';
 
 if SERVER == nil {
     io.println('Required env variables are not set!');
     feral.exit(1);
 }
 
-let notifier = ntfy.new(SERVER, TOKEN, TOPIC);
-io.println(notifier.testCon());
+io.print('-- connecting ... ');
+let notifier = ntfy.new(SERVER, TOKEN);
+let connRes = notifier.testCon(TOPIC);
+io.cprintln(connRes.isOk() ? '{g}success{0}!' : '{r}failed{0}!');
+if connRes.isErr() {
+    io.println('error: ', connRes.val().msg());
+    feral.exit(1);
+}
+
+let sent = false;
+
+io.cprintln('-- subscribing to {y}', TOPIC, '{0}');
+for msg in notifier.subscribe(TOPIC) {
+    if !sent {
+        io.cprint('-- sending test msg {y}hello world{0} ... ');
+        let res = notifier.publish(TOPIC, ntfy.Priority.HIGH, 'hello world', 'this is a test message from feral', 'warn');
+        if res.isOk() {
+            io.cprintln('{g}done{0}!');
+        } else {
+            io.cprintln('{r}failed{0}!');
+            break;
+        }
+        sent = true;
+    }
+    if msg.find('title') && msg.title == 'hello world' {
+        io.cprintln('-- received test message: {y}', msg.title, '{0}');
+        break;
+    }
+}
