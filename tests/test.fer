@@ -1,7 +1,8 @@
 let io = import('std/io');
 let os = import('std/os');
+let json = import('std/json');
+
 let ntfy = import('ntfy/ntfy');
-let emoji = import('emoji/emoji');
 
 let SERVER = os.getEnv('NTFY_SERVER');
 let TOKEN = os.getEnv('NTFY_TOKEN');
@@ -21,23 +22,25 @@ if connRes.isErr() {
     feral.exit(1);
 }
 
-let sent = false;
+let sent = 0, recv = 0;
 
 io.cprintln('-- subscribing to {y}', TOPIC, '{0}');
-for msg in notifier.subscribe(TOPIC) {
-    if !sent {
-        io.cprint('-- sending test msg {y}hello world{0} ... ');
-        let res = notifier.publish(TOPIC, ntfy.Priority.HIGH, 'hello world', 'this is a test message from feral', 'warn');
+for msgStr in notifier.subscribe(TOPIC) {
+    if sent < 5 {
+        io.cprint('-- sending test msg ', sent + 1, ' {y}hello world ', sent + 1, '{0} ... ');
+        let res = notifier.publish(TOPIC, ntfy.Priority.HIGH, 'hello world ' + (sent + 1).str(), 'this is a test message from feral', 'warn');
         if res.isOk() {
             io.cprintln('{g}done{0}!');
         } else {
             io.cprintln('{r}failed{0}!');
             break;
         }
-        sent = true;
+        ++sent;
     }
-    if msg.find('title') && msg.title == 'hello world' {
+    let msg = json.loads(msgStr);
+    if msg.find('title') && msg.title.startsWith('hello world') {
         io.cprintln('-- received test message: {y}', msg.title, '{0}');
-        break;
+        ++recv;
+        if recv == sent { break; }
     }
 }

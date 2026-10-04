@@ -5,7 +5,7 @@ let vec = import('std/vec');
 let json = import('std/json');
 let time = import('std/time');
 
-let curl = import('curl/curl');
+let http = import('http/http');
 
 # ntfy publish -k "$NTFY_TOKEN" -p high -T green_circle,computer,"$TARGET_HOSTNAME",connstate -t 'Network connection is back!'
 #   $NTFY_SERVER/$NTFY_TOPIC_NAME 'Connection is successful!'
@@ -23,16 +23,6 @@ let NtfyCon = struct(
     token = ''
 );
 NtfyCon.setTypeName('NtfyCon');
-
-let NtfySub = struct(
-    easy = nil,
-    timeout = -1, # indefinite
-    msgs = vec.new(refs = true),
-    buffer = ''
-);
-NtfySub.setTypeName('NtfySub');
-
-let multi = curl.newMulti();
 
 "
   fn(server, token) -> NtfyCon
@@ -56,21 +46,18 @@ Publish a `msg` using `title` with `priority` and having tags from `tagStr`, on 
 Returns `Result.ok(nil)` on success, `Result.err(code, msg)` on failure.
 "
 let publish in NtfyCon = fn(topic, priority, title, msg, tagStr) {
-    let c = curl.newEasy();
-    c.setOpt(curl.OPT_URL, self.server + '/' + topic);
-    c.setOpt(curl.OPT_FOLLOWLOCATION, 1);
-    c.setOpt(curl.OPT_POSTFIELDS, msg);
-
-    let httpHeaders = map.new(refs = true);
-    httpHeaders.insert('Content-Type', 'application/x-www-form-urlencoded');
-    httpHeaders.insert('Priority', priority.str());
-    httpHeaders.insert('Title', title);
-    httpHeaders.insert('Authorization', 'Bearer ' + self.token);
-    httpHeaders.insert('Tags', tagStr);
-    c.setOpt(curl.OPT_HTTPHEADER, httpHeaders);
-    let res = c.perform();
-    if res == curl.E_OK { return feral.ok(nil); }
-    return feral.err(res, curl.easyStrErr(res));
+    let headers = map.new(
+        'Authorization', 'Bearer ' + self.token,
+        'Content-Type', 'application/x-www-form-urlencoded',
+        'Priority', priority.str(),
+        'Tags', tagStr,
+        'Title', title
+    );
+    let resp = http.post(self.server + '/' + topic, msg, headers = headers).?;
+    if resp.code != 200 {
+        return feral.err(resp.code, 'HTTP request failed (', resp.code, ') with body:\n', resp.body);
+    }
+    return feral.ok(nil);
 };
 
 "
@@ -80,49 +67,9 @@ Returns an NtfySub object which can be used to iterate through any messages that
 If `timeout` is `-1`, the wait for any message is indefinite.
 "
 let subscribe in NtfyCon = fn(topic, timeout = -1) {
-    let c = curl.newEasy();
-    let sub = NtfySub(ref(c), timeout);
-    let headers = map.new(refs = true, 'Authorization', 'Bearer ' + self.token);
-    c.setOpt(curl.OPT_URL, self.server + '/' + topic + '/json');
-    c.setOpt(curl.OPT_HTTPHEADER, headers);
-    c.setOpt(curl.OPT_NOPROGRESS, 1);
-    c.setOpt(curl.OPT_FOLLOWLOCATION, 1);
-    c.setOpt(curl.OPT_WRITEFUNCTION, sub.writeCb);
-    multi.addEasy(c);
-    return ref(sub);
-};
-
-# Used to read through incoming messages on the subscribed topic.
-let next in NtfySub = fn() {
-    if !self.msgs.empty() {
-        let msg = ref(self.msgs.front());
-        self.msgs.erase(0);
-        return ref(msg);
-    }
-    let end = self.timeout < 0 ? self.timeout : (time.resolve(time.now(), time.milli) + self.timeout);
-    while (end < 0 || time.resolve(time.now(), time.milli) < end) && !self.easy.done() {
-        let res = multi.perform();
-        if res != curl.M_OK { raise('failed to fetch data through curl: ', curl.multiStrErr(res)); }
-        if !self.msgs.empty() {
-            let msg = ref(self.msgs.front());
-            self.msgs.erase(0);
-            return ref(msg);
-        }
-    }
-    return nil;
-};
-
-let writeCb in NtfySub = fn(data) {
-    let tmp = self.buffer + data.str();
-    while true {
-        let nl = tmp.find('\n');
-        if nl < 0 { break; }
-        let line = tmp.sub(0, nl);
-        tmp = tmp.sub(nl + 1);
-        if line.empty() { continue; }
-        self.msgs.push(json.loads(line));
-    }
-    self.buffer = tmp;
+    let headers = map.new('Authorization', 'Bearer ' + self.token);
+    # streaming mode doesn't return a feral.err()
+    return http.get(self.server + '/' + topic + '/json', headers = headers, stream = true, timeout = timeout).ok();
 };
 
 # Utility functions

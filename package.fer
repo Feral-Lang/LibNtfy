@@ -6,11 +6,11 @@ let configure = fn(info) {
         'Ntfy',
         desc = 'Ntfy bindings for Feral.',
         version = '0.2.0',
-        feral = '>=2.4.1',
+        feral = '>=2.5.4',
         author = vec.new('Chirag-Khandelwal <github@mail.chiragkh.me>')
     );
 
-    pkg.requires('Curl', version = '~0.2.0', feral = true);
+    pkg.requires('HTTP', version = '~0.1.0', feral = true);
 
     return feral.ok(pkg);
 };
