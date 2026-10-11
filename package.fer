@@ -5,12 +5,12 @@ let configure = fn(info) {
     let pkg = package.new(
         'Ntfy',
         desc = 'Ntfy bindings for Feral.',
-        version = '0.2.0',
-        feral = '>=2.5.4',
+        version = '0.2.1',
+        feral = '>=2.6.0',
         author = vec.new('Chirag-Khandelwal <github@mail.chiragkh.me>')
     );
 
-    pkg.requires('HTTP', version = '~0.1.0', feral = true);
+    pkg.requires('HTTP', version = '~0.1.1', feral = true);
 
     return feral.ok(pkg);
 };
